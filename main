@@ -8,6 +8,74 @@
 #include <vector>
 using namespace std;
 
+class AccountsList;
+class BankAccount;
+class CheckingAccount;
+class SavingsAccount;
+class FullName;
+
+//A new class which maintains a vector of pointers of al created objects
+class AccountsList
+{
+private:
+	//The said vector
+	vector<BankAccount*> List;
+
+	//Singleton call and the static variable that stores the pointer to the instance of the accountslist
+	static AccountsList* instance;
+	AccountsList() { List.clear(); };
+
+public:
+	//Singleton call
+	static AccountsList* GetInstance()
+	{
+		if (instance == nullptr)
+		{
+			instance = new AccountsList();
+		}
+		return instance;
+	}
+
+	//Destructor to deallocate all memory stored for vector
+	~AccountsList()
+	{
+		vector<BankAccount*>().swap(List);
+	}
+
+	//Function that is called when the objects are constructed;
+	//Takes the objects pointers and appends it to the vector
+	void save(BankAccount* newaccount)
+	{
+		List.push_back(newaccount);
+	}
+
+	//Function that scans through the vector and prints all available information
+	void printall()
+	{
+		try
+		{
+			for (int i = 0; i < List.size(); i++)
+			{
+				if (List.size() == 0)
+				{
+					throw (-1);
+				}
+				//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+				//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+				//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+				cout << "\nPrinting all created accounts\n";
+				List[i]->print();
+			}
+		}
+		catch(int)
+		{
+			cout << "NO ACCOUNTS CREATED!";
+		}
+	}
+};
+
+AccountsList* AccountsList::instance = nullptr;
+
 //Composite object of name class with overloaded "<<" operator that allows the object to be printed like a string
 class FullName
 {
@@ -92,6 +160,10 @@ public:
 		accountno = accountcount;
 		balance = inbalance;
 		accountcount++;
+
+		AccountsList* s1;
+		s1 = AccountsList::GetInstance();
+		s1->save(this);
 	}
 
 	//All get functions
@@ -163,14 +235,9 @@ public:
 	}
 
 	//Preferred Constructor, demands all information of both base and derived classes and over-writes them
-	CheckingAccount(string infirstname, string inlastname, double inbalance, double ininterest, double inminbal, double inservcharg)
+	CheckingAccount(string infirstname, string inlastname, double inbalance, double ininterest, double inminbal, double inservcharg):BankAccount(infirstname, inlastname, inbalance)
 	{
-		name.setFirstName(infirstname);
-		name.setLastName(inlastname);
-		accountno = accountcount;
 		accounttype = "Checking Account";
-		balance = inbalance;
-		accountcount++;
 		intrate = ininterest;
 		minimumbalance = inminbal;
 		servicecharge = inservcharg;
@@ -275,15 +342,10 @@ public:
 
 	//constructor unique to saving account, almost identical to default constructor but initializes intrate
 	//overrides any default construction of BankAccount class - overengineering, yes, but less prone to errors
-	SavingAccount(string infirstname, string inlastname, double inbalance, double inintrate)
+	SavingAccount(string infirstname, string inlastname, double inbalance, double inintrate):BankAccount(infirstname,inlastname,inbalance)
 	{
-		name.setFirstName(infirstname);
-		name.setLastName(inlastname);
-		accountno = accountcount;
 		accounttype = "Saving Account";
-		balance = inbalance;
 		intrate = inintrate;
-		accountcount++;
 	}
 
 	//make deposit and withdraw money is a functionality is already present in the base function, no need to re-implement
@@ -323,124 +385,80 @@ public:
 
 void callWithdraw(BankAccount* object, int amount)
 {
-	object->withdraw(amount);
+	
+	try
+	{
+		if (object == nullptr)
+		{
+			throw (-1);
+		}
+		object->withdraw(amount);
+	}
+	catch (int)
+	{
+		cout << "\nError! No user of the specified details exists! No changes were made.\n";
+	}
 }
 
 void callDeposit(BankAccount* object, int amount)
 {
-	object->deposit(amount);
+	try
+	{
+		if (object == nullptr)
+		{
+			throw (-1);
+		}
+		object->deposit(amount);
+	}
+	catch (int)
+	{
+		cout << "\nError! No user of the specified details exists! No changes were made.\n";
+	}
 }
-
-class AccountsList
-{
-private:
-	vector<BankAccount*> List;
-public:
-	AccountsList() {};
-	~AccountsList()
-	{
-		for (int it = 0; it < List.size(); it++)
-		{
-			delete List[it];
-		}
-		vector<BankAccount*>().swap(List);
-	}
-	void createNewAccount(string infirstname, string inlastname, double inbalance, double inintrate)
-	{
-		BankAccount* accountptr;
-		try
-		{
-			accountptr = new SavingAccount(infirstname, inlastname, inbalance, inintrate);
-		}
-		catch(bad_alloc& error)
-		{
-			cout << "Warning! Bad memory allocation. Account was not created.";
-			accountptr = nullptr;
-		}
-		List.push_back(accountptr);
-	}
-	void createNewAccount(string infirstname, string inlastname, double inbalance, double ininterest, double inminbal, double inservcharg)
-	{
-		BankAccount* accountptr;
-		try
-		{
-			accountptr = new CheckingAccount(infirstname, inlastname, inbalance, ininterest, inminbal, inservcharg);
-		}
-		catch (bad_alloc & error)
-		{
-			cout << "Warning! Bad memory allocation. Account was not created.";
-			accountptr = nullptr;
-		}
-		List.push_back(accountptr);
-	}
-	void printall()
-	{
-		for (int it = 0; it < List.size(); it++)
-		{
-			cout << "\n";
-			List[it]->print();
-			cout << "\n";
-		}
-	}
-
-	BankAccount* find(int accountno)
-	{
-		int error = 0;
-		int i = 0;
-		int location = -1;
-		try
-		{
-			while (i < List.size())
-			{
-				if (List[i]->getaccountno() == accountno)
-				{
-					location = i;
-				};
-				i++;
-			}
-			if (location == -1)
-			{
-				throw error;
-			}
-		}
-		catch (int error)
-		{
-			cout << "No account found with the given account number!";
-			return nullptr;
-		}
-		return List[location];
-	}
-};
 
 int main()
 {
-	AccountsList mainList;
-	mainList.createNewAccount("Alexander", "Anderson", 1000, 0.05, 500, 10);
-	mainList.find(0)->print();
-	mainList.find(0)->receiveinterest();
-	mainList.find(0)->print();
+	AccountsList* s1;
+	s1 = AccountsList::GetInstance();
+
 	
 	
-	CheckingAccount acc3("Alexander", "Anderson", 1000, 0.05, 500, 10);
-	acc3.print();
-	acc3.receiveinterest();
-	acc3.print();
-	acc3.writecheck(100);
+	CheckingAccount acc1("Alexander", "Anderson", 1000, 0.05, 500, 10);
+	acc1.print();
+	acc1.receiveinterest();
+	acc1.print();
+	acc1.writecheck(100);
 
 	//Checking withdrawal from account, including its theoretical ability to go below zero
 	//The functionalities of interest and check-writing, however, should be disabled when below minimum balance
-	acc3.withdraw(700);
-	acc3.withdraw(700);
-	acc3.receiveinterest();
-	acc3.writecheck(200);
-	acc3.print();
+	acc1.withdraw(700);
+	acc1.withdraw(700);
+	acc1.receiveinterest();
+	acc1.writecheck(200);
+	acc1.print();
 
 	//Testing basic construction of a saving account, including setter function
-	SavingAccount acc4("Mark", "Shepard", 1600, 0.01);
-	acc4.print();
-	acc4.receiveinterest();
-	acc4.changeinterest(0.05);
-	acc4.print();
+	SavingAccount acc2("Mark", "Shepard", 1600, 0.01);
+	acc2.print();
+	acc2.receiveinterest();
+	acc2.changeinterest(0.05);
+	acc2.print();
+
+	//Testing functionality of non-class functions
+	callDeposit(&acc2, 100);
+	acc2.print();
+	callWithdraw(&acc2, 100);
+	acc2.print();
+
+	//Testing functionality of printall
+	s1->printall();
+
+	//Testing error handling
+	//Below, a 'nullptr' was used to demonstrate that any incorrect input should throw an error
+	//Perhaps there is a function to find a member with a given account number or name but this function
+	//Returns a nullptr if it fails to find one. If so then the callDeposit/Withdraw functions should fail.
+	callDeposit(nullptr, 10);
+	callWithdraw(nullptr, 10);
 
 	system("pause");
 	return(0);
