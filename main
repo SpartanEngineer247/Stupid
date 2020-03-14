@@ -1,7 +1,7 @@
 // Code Written by Eddie Han
 // Practice with polymorphism
-// A.k.a. overengineering until no errors show
-// Featuring - total lack of input cleaning and general lack of knowledge on functionalities of a real life 'bank account'
+// Error handling cases done: when there is are no accounts created,
+//when withdrawing or depositing with a non-existent user
 
 #include <iostream>
 #include <string>
@@ -52,24 +52,27 @@ public:
 	//Function that scans through the vector and prints all available information
 	void printall()
 	{
+		//Attempts to print all elements in the vector.
+		//If the vector is empty it will throw an error.
 		try
 		{
+			if (List.size() == 0)
+			{
+				throw (-1);
+			}
+
+			cout << "\nPrinting all created accounts\n";
 			for (int i = 0; i < List.size(); i++)
 			{
-				if (List.size() == 0)
-				{
-					throw (-1);
-				}
 				//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 				//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 				//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-				cout << "\nPrinting all created accounts\n";
-				List[i]->print();
+				//List[i]->print();
 			}
 		}
 		catch(int)
 		{
-			cout << "NO ACCOUNTS CREATED!";
+			cout << "\nNO ACCOUNTS CREATED!\n\n";
 		}
 	}
 };
@@ -421,7 +424,13 @@ int main()
 	AccountsList* s1;
 	s1 = AccountsList::GetInstance();
 
-	
+	//Testing error handling
+	//Below, a 'nullptr' was used to demonstrate that any incorrect input should throw an error
+	//Perhaps there is a function to find a member with a given account number or name but this function
+	//Returns a nullptr if it fails to find one. If so then the callDeposit/Withdraw functions should fail.
+	callDeposit(nullptr, 10);
+	callWithdraw(nullptr, 10);
+	s1->printall();
 	
 	CheckingAccount acc1("Alexander", "Anderson", 1000, 0.05, 500, 10);
 	acc1.print();
@@ -452,13 +461,6 @@ int main()
 
 	//Testing functionality of printall
 	s1->printall();
-
-	//Testing error handling
-	//Below, a 'nullptr' was used to demonstrate that any incorrect input should throw an error
-	//Perhaps there is a function to find a member with a given account number or name but this function
-	//Returns a nullptr if it fails to find one. If so then the callDeposit/Withdraw functions should fail.
-	callDeposit(nullptr, 10);
-	callWithdraw(nullptr, 10);
 
 	system("pause");
 	return(0);
