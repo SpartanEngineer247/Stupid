@@ -1,0 +1,447 @@
+// Code Written by Eddie Han
+// Practice with polymorphism
+// A.k.a. overengineering until no errors show
+// Featuring - total lack of input cleaning and general lack of knowledge on functionalities of a real life 'bank account'
+
+#include <iostream>
+#include <string>
+#include <vector>
+using namespace std;
+
+//Composite object of name class with overloaded "<<" operator that allows the object to be printed like a string
+class FullName
+{
+private:
+	string firstname;
+	string lastname;
+public:
+	FullName(string firstin, string lastin)
+	{
+		firstname = firstin;
+		lastname = lastin;
+	}
+	FullName()
+	{
+		firstname = "John";
+		lastname = "Doe";
+	}
+
+	void setFirstName(string firstin)
+	{
+		firstname = firstin;
+	}
+	void setLastName(string lastin)
+	{
+		lastname = lastin;
+	}
+	string getFullName()
+	{
+		string FullName;
+		FullName.append(firstname);
+		FullName.append(" ");
+		FullName.append(lastname);
+		return FullName;
+	}
+	string getFirstName()
+	{
+		return firstname;
+	}
+	string getLastName()
+	{
+		return lastname;
+	}
+
+	//Using something that must never be used because it's easier
+	friend ostream& operator<<(ostream& os, FullName const& person) {
+		return os << person.firstname << " " << person.lastname << endl;
+	}
+};
+
+class BankAccount
+{
+protected:
+	//all data required for this class
+	FullName name; //FullName object has a default constructor, no initializer needed
+	int accountno;
+	double balance;
+
+	//When a BankAccount object is created, it is neither saving or check, hence it is named Basal
+	//This string will change whenever the derived classes initialize
+	string accounttype = "Basal Account";
+
+	//it seems that while 'interest rate' exists in BankAccount, it is not used except in its derived classes
+	//hence it is initialized to zero and no constructor demands its value
+	double intrate = 0.0;
+
+	//static data member, shared between all BankAccounts, keeps track of number of accounts so that
+	//a unique number may be assigned to every new account
+	static int accountcount;
+public:
+	//default constructor, to prevent any errors. Not strictly necessary but here for safety.
+	BankAccount()
+	{
+		accountno = 0;
+		balance = 0.0;
+	}
+
+	//preferable constructor, where all necessary information is given
+	BankAccount(string infirstname, string inlastname, double inbalance)
+	{
+		name.setFirstName(infirstname);
+		name.setLastName(inlastname);
+		accountno = accountcount;
+		balance = inbalance;
+		accountcount++;
+	}
+
+	//All get functions
+	int getaccountno()
+	{
+		return accountno;
+	}
+	string getaccounttype()
+	{
+		return accounttype;
+	}
+	double getbalance()
+	{
+		return balance;
+	}
+	double getinterestrate()
+	{
+		return intrate;
+	}
+
+	//some data do not have setters as they should not change regardless of function, at least in bank account
+	void deposit(double amount)
+	{
+		cout << endl << "You deposited: " << amount << " to your account" << endl;
+		balance = balance + amount;
+	}
+
+	//changes interest rate of the account, although in BankAccount this does nothing
+	void changeinterest(double newinterest)
+	{
+		intrate = newinterest;
+	}
+
+	//this function is an pure virtual function - it needs to be overwritten by its derived classes:
+	virtual void withdraw(double amount) = 0;
+
+	//this function is shared for all its derived classes, but implemented slightly differently, hence the virtual keyword.
+	//for the Bank Account object itself the function does nothing special
+	virtual void receiveinterest()
+	{
+		balance = balance;
+	}
+
+	//this function prints all necessary information, though its virtual classes need to print more information, hence the virtual.
+	virtual void print()
+	{
+		cout << "Account Details";
+		cout << endl << "Full Name: " << name.getFullName();
+		cout << endl << "Account Number: " << accountno;
+		cout << endl << "Account Type: " << accounttype;
+		cout << endl << "Current Balance: " << balance << endl;
+	}
+};
+
+//initializes the static data member for BankAccount
+int BankAccount::accountcount = 0;
+
+class CheckingAccount : public BankAccount
+{
+protected:
+	double minimumbalance;
+	double servicecharge;
+public:
+	//Default constructor. Should automatically also call the default constructors of the base class
+	CheckingAccount()
+	{
+		minimumbalance = 0;
+		servicecharge = 0;
+	}
+
+	//Preferred Constructor, demands all information of both base and derived classes and over-writes them
+	CheckingAccount(string infirstname, string inlastname, double inbalance, double ininterest, double inminbal, double inservcharg)
+	{
+		name.setFirstName(infirstname);
+		name.setLastName(inlastname);
+		accountno = accountcount;
+		accounttype = "Checking Account";
+		balance = inbalance;
+		accountcount++;
+		intrate = ininterest;
+		minimumbalance = inminbal;
+		servicecharge = inservcharg;
+	}
+
+	//getters unique to this derived class
+	double getminbal()
+	{
+		return minimumbalance;
+	}
+	double getservcharg()
+	{
+		return servicecharge;
+	}
+
+	//setters unique to this derived class
+	void setminbal(double newminbal)
+	{
+		minimumbalance = newminbal;
+	}
+	void setservicecharge(double newservcharg)
+	{
+		servicecharge = newservcharg;
+	}
+
+	//Note; getters and setters of interest rate is already present in base class, no need to re-write
+
+	//Receive interest function - does not actually process if the balance is low than minimum
+	void receiveinterest()
+	{
+		if (isabovemin())
+		{
+			balance = balance + balance * intrate;
+		}
+	}
+
+	//Quick boolean function to check if account is above or below minimum balance - can be used alone but is implemented
+	//together with other functions that needs to check minimum balance
+	bool isabovemin()
+	{
+		if (balance >= minimumbalance)
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	//interace inherited from base class. Checking account CAN go below 0 balance, hence
+	//the zero balance checking functionality is removed
+	void withdraw(double amount)
+	{
+		cout << endl << "You withdrew: " << amount << " from your account" << endl;
+		balance = balance - amount;
+		if (!isabovemin())
+		{
+			cout << "Warning! Your balance is below the account setting's minimum balance.";
+		}
+		cout << " Your current balance: " << balance << endl;
+	}
+
+	//'write a check' was interpreted as printing out a check-like statment in the output whilst withdrawing money
+	//Will only be done when the account is positive, although normal withdrawal will allow the account to go below zero
+	void writecheck(double amount)
+	{
+		if (isabovemin())
+		{
+			withdraw(amount);
+
+			cout << endl << "This check is written by: " << endl;
+			cout << name.getFullName() << endl;
+			cout << "For the amount of: " << endl;
+			cout << "$ " << amount << endl;
+		}
+	}
+
+	//prints everything
+	void print()
+	{
+		cout << "Account Details";
+		cout << endl << "Full Name: " << name.getFullName();
+		cout << endl << "Account Number: " << accountno;
+		cout << endl << "Account Type: " << accounttype;
+		cout << endl << "Current Balance: " << balance;
+		cout << endl << "Minimum Balance: " << minimumbalance;
+		cout << endl << "Interest Rate: " << intrate << endl;
+		if (balance < minimumbalance)
+		{
+			cout << endl << "Warning! Your balance is below minimum. You will be charged $ " << servicecharge << "in your next bill." << endl;
+		}
+	}
+};
+
+class SavingAccount : public BankAccount
+{
+	//this object has no unique data members but has slightly different behaviors from its base class
+public:
+	//no default constructor needed, as all data members are initialized by the default constructor
+	//of the base class, and this object has no unique data member
+
+	//constructor unique to saving account, almost identical to default constructor but initializes intrate
+	//overrides any default construction of BankAccount class - overengineering, yes, but less prone to errors
+	SavingAccount(string infirstname, string inlastname, double inbalance, double inintrate)
+	{
+		name.setFirstName(infirstname);
+		name.setLastName(inlastname);
+		accountno = accountcount;
+		accounttype = "Saving Account";
+		balance = inbalance;
+		intrate = inintrate;
+		accountcount++;
+	}
+
+	//make deposit and withdraw money is a functionality is already present in the base function, no need to re-implement
+	//similarly for setting and retrieving interest rates
+	//but now calculating interest function needs to be rewritten as interest matters in savings account
+	void receiveinterest()
+	{
+		balance = balance + balance * intrate;
+	}
+
+	//interface inherited from base class
+	void withdraw(double amount)
+	{
+		if (balance - amount < 0)
+		{
+			cout << "Error! You do not have enough in your balance!";
+		}
+		else
+		{
+			cout << endl << "You withdrew: " << amount << " from your account" << endl;
+			balance = balance - amount;
+		}
+		cout << " Your current balance: " << balance << endl;
+	}
+
+	//prints everything
+	void print()
+	{
+		cout << endl << "Account Details";
+		cout << endl << "Full Name: " << name.getFullName();
+		cout << endl << "Account Number: " << accountno;
+		cout << endl << "Account Type: " << accounttype;
+		cout << endl << "Current Balance: " << balance;
+		cout << endl << "Interest Rate: " << intrate << endl;
+	}
+};
+
+void callWithdraw(BankAccount* object, int amount)
+{
+	object->withdraw(amount);
+}
+
+void callDeposit(BankAccount* object, int amount)
+{
+	object->deposit(amount);
+}
+
+class AccountsList
+{
+private:
+	vector<BankAccount*> List;
+public:
+	AccountsList() {};
+	~AccountsList()
+	{
+		for (int it = 0; it < List.size(); it++)
+		{
+			delete List[it];
+		}
+		vector<BankAccount*>().swap(List);
+	}
+	void createNewAccount(string infirstname, string inlastname, double inbalance, double inintrate)
+	{
+		BankAccount* accountptr;
+		try
+		{
+			accountptr = new SavingAccount(infirstname, inlastname, inbalance, inintrate);
+		}
+		catch(bad_alloc& error)
+		{
+			cout << "Warning! Bad memory allocation. Account was not created.";
+			accountptr = nullptr;
+		}
+		List.push_back(accountptr);
+	}
+	void createNewAccount(string infirstname, string inlastname, double inbalance, double ininterest, double inminbal, double inservcharg)
+	{
+		CheckingAccount* accountptr;
+		try
+		{
+			accountptr = new CheckingAccount(infirstname, inlastname, inbalance, ininterest, inminbal, inservcharg);
+		}
+		catch (bad_alloc & error)
+		{
+			cout << "Warning! Bad memory allocation. Account was not created.";
+			accountptr = nullptr;
+		}
+		List.push_back(accountptr);
+	}
+	void printall()
+	{
+		for (int it = 0; it < List.size(); it++)
+		{
+			cout << "\n";
+			List[it]->print();
+			cout << "\n";
+		}
+	}
+
+	BankAccount* find(int accountno)
+	{
+		int error = 0;
+		int i = 0;
+		int location = -1;
+		try
+		{
+			while (i < List.size())
+			{
+				if (List[i]->getaccountno() == accountno)
+				{
+					location = i;
+				};
+				i++;
+			}
+			if (location == -1)
+			{
+				throw error;
+			}
+		}
+		catch (int error)
+		{
+			cout << "No account found with the given account number!";
+			return nullptr;
+		}
+		return List[location];
+	}
+};
+
+int main()
+{
+	AccountsList mainList;
+	mainList.createNewAccount("Alexander", "Anderson", 1000, 0.05, 500, 10);
+	mainList.find(0)->print();
+	mainList.find(0)->receiveinterest();
+	mainList.find(0)->print();
+	
+	
+	CheckingAccount acc3("Alexander", "Anderson", 1000, 0.05, 500, 10);
+	acc3.print();
+	acc3.receiveinterest();
+	acc3.print();
+	acc3.writecheck(100);
+
+	//Checking withdrawal from account, including its theoretical ability to go below zero
+	//The functionalities of interest and check-writing, however, should be disabled when below minimum balance
+	acc3.withdraw(700);
+	acc3.withdraw(700);
+	acc3.receiveinterest();
+	acc3.writecheck(200);
+	acc3.print();
+
+	//Testing basic construction of a saving account, including setter function
+	SavingAccount acc4("Mark", "Shepard", 1600, 0.01);
+	acc4.print();
+	acc4.receiveinterest();
+	acc4.changeinterest(0.05);
+	acc4.print();
+
+	system("pause");
+	return(0);
+}
